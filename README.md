@@ -3,7 +3,7 @@ A command-line tool for determining whether a KEGG metabolic module is functiona
 
 ## Overview
 
-Given a KofamScan output file and a KEGG module definition file, `module_parser.py` parses the module's boolean logic (AND/OR relationships between KOs), checks which KOs are present in the species, and evaluates whether the module is functional. It also reports which KOs are present and which are missing.
+Given a KofamScan (https://github.com/takaram/kofam_scan) output file and a KEGG module (https://www.genome.jp/kegg/module.html) definition file, `module_parser.py` parses the module's boolean logic (AND/OR relationships between KOs), checks which KOs are present in the species, and evaluates whether the module is functional. It also reports which KOs are present and which are missing. For running across many species at once, a batch wrapper script (`run_module_parser.sh`) is also provided.
 
 ## Requirements
 
@@ -80,8 +80,59 @@ True     K07748 K00213    K00801 K00511 K01852
 6. **Evaluate** — Evaluates the resulting boolean expression to determine module completeness.
 7. **Report** — Prints the result along with lists of present and missing KOs.
 
+
+## Running Across Multiple Species
+
+To evaluate a module across many species at once, use the provided `run_module_parser.sh` wrapper. It loops over a list of KofamScan TSV files, runs `module_parser.py` on each, and merges all results into a single TSV.
+
+### Requirements
+
+- Bash
+- `module_parser.py` must be in the same directory as the script
+
+### Setup
+
+Create a plain text file listing the paths to all your species TSV files, one per line:
+
+```
+/path/to/Species1_ko_annotations.tsv
+/path/to/Species2_ko_annotations.tsv
+/path/to/Species3_ko_annotations.tsv
+```
+
+### Usage
+
+```bash
+bash run_module_parser.sh <all_tsv.txt> <module_file>
+```
+
+### Example
+
+```bash
+bash run_module_parser.sh all_tsv.txt cholesterol_biosynthesis.txt
+```
+
+### Output
+
+A single merged TSV file named `<module_name>_functionality.tsv` (e.g., `cholesterol_biosynthesis_functionality.tsv`) with one row per species:
+
+| Column | Description |
+|--------|-------------|
+| `species` | Species name, extracted from the input filename |
+| `functional` | `True` if the module is complete, `False` otherwise |
+| `missing_kos` | Space-separated list of required KOs not found in the species |
+| `present_kos` | Space-separated list of required KOs found in the species |
+
+**Example output:**
+```
+species             functional  missing_kos         present_kos
+Species1            True                            K00801 K00511 K01852
+Species2            False       K00511 K01852       K00801
+```
+
 ## Notes
 
-- Double hyphens (`--`) in KEGG module notation (indicating unassigned functions) are not currently handled.
+- **module_parser.py**: Double hyphens (`--`) in KEGG module notation (indicating unassigned functions) are not currently handled.
+- **run_module_parser.sh**: Species names are parsed from the input filenames by stripping the `_ko_annotations.tsv` suffix, so make sure your files follow this naming convention.
 
 
